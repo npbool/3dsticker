@@ -14,16 +14,25 @@
 // Relative position of various facial feature relative to sellion
 // Values taken from https://en.wikipedia.org/wiki/Human_head
 // X points forward
-const static cv::Point3f P3D_SELLION(0., 0.,0.);
-const static cv::Point3f P3D_RIGHT_EYE(-20., -65.5,-5.);
-const static cv::Point3f P3D_LEFT_EYE(-20., 65.5,-5.);
-const static cv::Point3f P3D_RIGHT_EAR(-100., -77.5,-6.);
-const static cv::Point3f P3D_LEFT_EAR(-100., 77.5,-6.);
-const static cv::Point3f P3D_NOSE(21.0, 0., -48.0);
-const static cv::Point3f P3D_STOMMION(10.0, 0., -75.0);
-const static cv::Point3f P3D_MENTON(0., 0.,-133.0);
-
+//const static cv::Point3f P3D_SELLION(0., 0.,0.);
+//const static cv::Point3f P3D_RIGHT_EYE(-20., -65.5,-5.);
+//const static cv::Point3f P3D_LEFT_EYE(-20., 65.5,-5.);
+//const static cv::Point3f P3D_RIGHT_EAR(-100., -77.5,-6.);
+//const static cv::Point3f P3D_LEFT_EAR(-100., 77.5,-6.);
+//const static cv::Point3f P3D_NOSE(21.0, 0., -48.0);
+//const static cv::Point3f P3D_STOMMION(10.0, 0., -75.0);
+//const static cv::Point3f P3D_MENTON(0., 0.,-133.0);
 //z, x, y
+
+
+const static cv::Point3f P3D_SELLION(0.0f, 0.0f,0.0f);
+const static cv::Point3f P3D_RIGHT_EYE(65.5f, -5.0f, -20.0f);
+const static cv::Point3f P3D_LEFT_EYE(-65.5f, -5.0f, -20.0f);
+const static cv::Point3f P3D_RIGHT_EAR(77.5f, -6.0f, -100.0f);
+const static cv::Point3f P3D_LEFT_EAR(-77.5f, -6.0f, -100.0f);
+const static cv::Point3f P3D_NOSE(0.0f, -48.0f, 21.0f);
+const static cv::Point3f P3D_STOMMION(0.0f, -75.0f, 10.0f);
+const static cv::Point3f P3D_MENTON(0.0f, -133.0f, 0.0f);
 
 
 static const int MAX_FEATURES_TO_TRACK=100;

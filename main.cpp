@@ -98,11 +98,11 @@ int main(int argc, char* argv[])
     //z, x, y
 
     GLfloat sticker_vertices[] = {
-        -100.0f, -77.5f, -6.0f,
-        -20.0f, -65.5f,-5.0f,
-        21.0f, 0.0f, -48.0f,
-        -20.0f, 65.5f,-5.0f,
-        -100.0f, 77.5f, -6.0f,
+       P3D_LEFT_EAR.x, P3D_LEFT_EAR.y, P3D_LEFT_EAR.z,
+       P3D_LEFT_EYE.x, P3D_LEFT_EYE.y, P3D_LEFT_EYE.z,
+       P3D_NOSE.x,P3D_NOSE.y, P3D_NOSE.z,
+       P3D_RIGHT_EYE.x, P3D_RIGHT_EYE.y, P3D_RIGHT_EYE.z,
+       P3D_RIGHT_EAR.x, P3D_RIGHT_EYE.y, P3D_RIGHT_EYE.z
     };
 //    GLfloat sticker_vertices[] = {
 //        -0.70566015f*(-10),0.34230855f*(-10), 0.99939969f*(-10),
@@ -168,10 +168,10 @@ int main(int argc, char* argv[])
         for(auto pose : estimator.poses()){
             cout<<"POSE"<<endl;
             glm::mat4 modelView(
-                -pose(0,0), -pose(1,0), -pose(2,0), pose(3,0),
-                -pose(0,1), -pose(1,1), -pose(2,1), pose(3,1),
-                -pose(0,2), -pose(1,2), -pose(2,2), pose(3,2),
-                -pose(0,3), -pose(1,3), -pose(2,3), pose(3,3)
+                pose(0,0), pose(1,0), pose(2,0), pose(3,0),
+                pose(0,1), pose(1,1), pose(2,1), pose(3,1),
+                pose(0,2), pose(1,2), pose(2,2), pose(3,2),
+                pose(0,3), pose(1,3), pose(2,3), pose(3,3)
             );
             glUniformMatrix4fv(modelviewLoc, 1, GL_FALSE, glm::value_ptr(modelView));
 
@@ -183,6 +183,29 @@ int main(int argc, char* argv[])
                 0,                             0,                               2*far*near/(far-near), 0
             );
             glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(-projection));
+
+            GLfloat* value;
+            value = glm::value_ptr(modelView);
+            cout<<"ModelView:"<<endl;
+            cout<<'[';
+            for(int i=0;i<16;++i){
+                cout<<value[i]<<',';
+            }
+            cout<<']'<<endl;
+
+            cout<<"Projection:"<<endl;
+            value = glm::value_ptr(projection);
+            cout<<'[';
+            for(int i=0;i<16;++i){
+                cout<<value[i]<<',';
+            }
+            cout<<']'<<endl;
+
+            glm::vec4 point(P3D_NOSE.x,P3D_NOSE.y, P3D_NOSE.z, 1.0f);
+            glm::vec4 transformed = modelView*point;
+            glm::vec4 mapped = projection*transformed;
+            cout<<"transformed: "<<transformed.x<<' '<<transformed.y<<' '<<transformed.z<<' '<<transformed.w<<endl;
+            cout<<"mapped: "<<mapped.x<<' '<<mapped.y<<' '<<mapped.z<<' '<<mapped.w<<endl;
 
             glBindVertexArray(sticker_VAO);
             glDrawArrays(GL_LINE_STRIP, 0, 5);
