@@ -16,7 +16,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-
+#include "Model.h"
 #include "estimate.hpp"
 using namespace cv;
 using namespace std;
@@ -121,8 +121,8 @@ int main(int argc, char* argv[])
 
     Shader stickerShader("shader/sticker.vert", "shader/sticker.frag");
     stickerShader.Use();
-    GLint modelviewLoc = glGetUniformLocation(stickerShader.Program, "modelview");
-    GLint projectionLoc = glGetUniformLocation(stickerShader.Program, "projection");
+//    GLint modelviewLoc = glGetUniformLocation(stickerShader.Program, "modelview");
+//    GLint projectionLoc = glGetUniformLocation(stickerShader.Program, "projection");
 
     GLuint bgTexture;
     glGenTextures(1, &bgTexture);
@@ -132,6 +132,15 @@ int main(int argc, char* argv[])
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
     glBindTexture(GL_TEXTURE_2D, 0);
+
+
+    cout<<"Begin Loading"<<endl;
+    Model glassModel((GLchar*)"object/glass.obj");
+    cout<<"Load Done"<<endl;
+    cout<<glassModel.meshes.size()<<" meshes"<<endl;
+    Shader meshShader("shader/mesh.vert", "shader/mesh.frag");
+    GLint modelviewLoc = glGetUniformLocation(meshShader.Program, "modelview");
+    GLint projectionLoc = glGetUniformLocation(meshShader.Program, "projection");
 
     Mat frame;
     Mat frame_vflip;
@@ -164,7 +173,7 @@ int main(int argc, char* argv[])
 
         // Draw sticker
 
-        stickerShader.Use();
+        meshShader.Use();
         for(auto pose : estimator.poses()){
             cout<<"POSE"<<endl;
             glm::mat4 modelView(
@@ -183,7 +192,7 @@ int main(int argc, char* argv[])
                 0,                             0,                               2*far*near/(far-near), 0
             );
             glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(-projection));
-
+            /*
             GLfloat* value;
             value = glm::value_ptr(modelView);
             cout<<"ModelView:"<<endl;
@@ -206,10 +215,14 @@ int main(int argc, char* argv[])
             glm::vec4 mapped = projection*transformed;
             cout<<"transformed: "<<transformed.x<<' '<<transformed.y<<' '<<transformed.z<<' '<<transformed.w<<endl;
             cout<<"mapped: "<<mapped.x<<' '<<mapped.y<<' '<<mapped.z<<' '<<mapped.w<<endl;
+            */
 
+            /*
             glBindVertexArray(sticker_VAO);
             glDrawArrays(GL_LINE_STRIP, 0, 5);
             glBindVertexArray(0);
+            */
+            glassModel.Draw(meshShader);
         }
 
         // Swap the screen buffers
