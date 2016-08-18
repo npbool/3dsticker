@@ -34,7 +34,7 @@ int main()
         return 1;
     }
 
-    Shader triangleShader("shader/triangles.vert", "shader/triangles.frag");
+    Shader triangleShader("shader/bg.vert", "shader/bg.frag");
 
     // Set up vertex data (and buffer(s)) and attribute pointers
     GLfloat vertices[] = {
