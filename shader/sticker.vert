@@ -9,5 +9,4 @@ uniform mat4 projection;
 void main()
 {
     gl_Position = projection * modelview * vec4(position, 1.0f);
-//    gl_Position = vec4(position, (-10.0f));
 }

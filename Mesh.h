@@ -28,20 +28,38 @@ struct Texture {
     aiString path;
 };
 
+struct Material {
+    glm::vec3 diffuse;
+    glm::vec3 ambient;
+    glm::vec3 emission;
+    glm::vec3 specular;
+    GLfloat shiness;
+    GLfloat opacity;
+    Material(){
+        diffuse = glm::vec3(1.0f, 1.0f, 1.0f);
+        ambient = glm::vec3(1.0f, 1.0f, 1.0f);
+        emission = glm::vec3(1.0f, 1.0f, 1.0f);
+        specular = glm::vec3(1.0f, 1.0f, 1.0f);
+        shiness = 1;
+        opacity = 1;
+    }
+};
 class Mesh {
 public:
     /*  Mesh Data  */
     vector<Vertex> vertices;
     vector<GLuint> indices;
     vector<Texture> textures;
+    Material material;
 
     /*  Functions  */
     // Constructor
-    Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures)
+    Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures, Material material)
     {
         this->vertices = vertices;
         this->indices = indices;
         this->textures = textures;
+        this->material = material;
 
         // Now that we have all the required data, set the vertex buffers and its attribute pointers.
         this->setupMesh();
@@ -73,6 +91,11 @@ public:
 
         // Also set each mesh's shininess property to a default value (if you want you could extend this to another mesh property and possibly change this value)
         glUniform1f(glGetUniformLocation(shader.Program, "material.shininess"), 16.0f);
+        glUniform3fv(glGetUniformLocation(shader.Program, "material.diffuse"), 1, glm::value_ptr(material.diffuse));
+        glUniform3fv(glGetUniformLocation(shader.Program, "material.ambient"), 1, glm::value_ptr(material.ambient));
+        glUniform3fv(glGetUniformLocation(shader.Program, "material.specular"), 1, glm::value_ptr(material.specular));
+        glUniform3fv(glGetUniformLocation(shader.Program, "material.emission"), 1, glm::value_ptr(material.emission));
+        glUniform1f(glGetUniformLocation(shader.Program, "material.opacity"), material.opacity);
 
         // Draw mesh
         glBindVertexArray(this->VAO);

@@ -22,6 +22,10 @@ using namespace std;
 
 GLint TextureFromFile(const char* path, string directory);
 
+glm::vec3 color3_to_vec3(aiColor3D& c){
+    return glm::vec3(c.r, c.g, c.b);
+}
+
 class Model
 {
 public:
@@ -56,6 +60,8 @@ public:
             cout << "ERROR::ASSIMP:: " << importer.GetErrorString() << endl;
             return;
         }
+        cout<<"Materials: " << scene->mNumMaterials<<endl;
+        cout<<"Textures: "<< scene->mNumTextures<<endl;
         // Retrieve the directory path of the filepath
         this->directory = path.substr(0, path.find_last_of('/'));
 
@@ -84,10 +90,13 @@ public:
 
     Mesh processMesh(aiMesh* mesh, const aiScene* scene)
     {
+        cout<<"Mesh "<<mesh->mName.C_Str()<<":"<<endl;
         // Data to fill
         vector<Vertex> vertices;
         vector<GLuint> indices;
         vector<Texture> textures;
+        Material mat;
+        float opacity = 1.0f;
 
         // Walk through each of the mesh's vertices
         for(GLuint i = 0; i < mesh->mNumVertices; i++)
@@ -137,16 +146,35 @@ public:
             // Specular: texture_specularN
             // Normal: texture_normalN
 
+            // Plain Colors
+            aiColor3D diffuse, specular, ambient, emission;
+            if(material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse) == AI_SUCCESS){
+                mat.diffuse = color3_to_vec3(diffuse);
+            }
+            if(material->Get(AI_MATKEY_COLOR_SPECULAR, specular) == AI_SUCCESS){
+                mat.specular = color3_to_vec3(specular);
+            }
+            if(material->Get(AI_MATKEY_COLOR_AMBIENT, ambient) == AI_SUCCESS){
+                mat.ambient = color3_to_vec3(ambient);
+            }
+            if(material->Get(AI_MATKEY_COLOR_EMISSIVE, emission) == AI_SUCCESS){
+                mat.emission = color3_to_vec3(emission);
+            }
+            if(material->Get(AI_MATKEY_OPACITY, opacity) == AI_SUCCESS){
+                mat.opacity = opacity;
+            }
             // 1. Diffuse maps
             vector<Texture> diffuseMaps = this->loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
             textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
             // 2. Specular maps
             vector<Texture> specularMaps = this->loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
+
             textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
         }
+        cout<<"textures: "<<textures.size()<<endl;
 
         // Return a mesh object created from the extracted mesh data
-        return Mesh(vertices, indices, textures);
+        return Mesh(vertices, indices, textures, mat);
     }
 
     // Checks all material textures of a given type and loads the textures if they're not loaded yet.
