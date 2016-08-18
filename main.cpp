@@ -10,7 +10,14 @@
 #include "constant.h"
 #include "setup_gl.h"
 #include <opencv2/highgui.hpp>
+#include <cmath>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+
+#include "estimate.hpp"
 using namespace cv;
 using namespace std;
 
@@ -18,7 +25,7 @@ using namespace std;
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 
 // The MAIN function, from here we start the application and run the game loop
-int main()
+int main(int argc, char* argv[])
 {
     // Init GLFW
     GLFWwindow* window = setup_gl();
@@ -26,13 +33,17 @@ int main()
     VideoCapture video_in(0);
 
     // adjust for your webcam!
-    video_in.set(CV_CAP_PROP_FRAME_WIDTH, 640);
-    video_in.set(CV_CAP_PROP_FRAME_HEIGHT, 480);
+    video_in.set(CV_CAP_PROP_FRAME_WIDTH, WIDTH);
+    video_in.set(CV_CAP_PROP_FRAME_HEIGHT, HEIGHT);
 
     if(!video_in.isOpened()) {
         cerr << "Couldn't open camera" << endl;
         return 1;
     }
+    auto estimator = HeadPoseEstimation(argv[1]);
+    estimator.focalLength = 500;
+    estimator.opticalCenterX = WIDTH/2;
+    estimator.opticalCenterY = HEIGHT/2;
 
     Shader triangleShader("shader/bg.vert", "shader/bg.frag");
 
@@ -68,10 +79,50 @@ int main()
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glEnableVertexAttribArray(2);
-
-//    glBindBuffer(GL_ARRAY_BUFFER, 0); // Note that this is allowed, the call to glVertexAttribPointer registered VBO as the currently bound vertex buffer object so afterwards we can safely unbind
     glBindVertexArray(0); // Unbind VAO (it's always a good thing to unbind any buffer/array to prevent strange bugs)
 
+
+    GLuint sticker_VAO, sticker_VBO;
+    glGenVertexArrays(1, &sticker_VAO);
+    glGenBuffers(1, &sticker_VBO);
+
+//    const static cv::Point3f P3D_SELLION(0., 0.,0.);
+//    const static cv::Point3f P3D_RIGHT_EYE(-20., -65.5,-5.);
+//    const static cv::Point3f P3D_LEFT_EYE(-20., 65.5,-5.);
+//    const static cv::Point3f P3D_RIGHT_EAR(-100., -77.5,-6.);
+//    const static cv::Point3f P3D_LEFT_EAR(-100., 77.5,-6.);
+//    const static cv::Point3f P3D_NOSE(21.0, 0., -48.0);
+//    const static cv::Point3f P3D_STOMMION(10.0, 0., -75.0);
+//    const static cv::Point3f P3D_MENTON(0., 0.,-133.0);
+
+    //z, x, y
+
+    GLfloat sticker_vertices[] = {
+        -100.0f, -77.5f, -6.0f,
+        -20.0f, -65.5f,-5.0f,
+        21.0f, 0.0f, -48.0f,
+        -20.0f, 65.5f,-5.0f,
+        -100.0f, 77.5f, -6.0f,
+    };
+//    GLfloat sticker_vertices[] = {
+//        -0.70566015f*(-10),0.34230855f*(-10), 0.99939969f*(-10),
+//        -0.46379354f*(-10),0.22221812f*(-10), 0.99968689f*(-10),
+//        -0.09695146f*(-10),-0.09496719f*(-10), 0.99978127f*(-10),
+//        0.25705746f*(-10),  0.22081736f*(-10), 0.9997069f*(-10),
+//        0.48007527f*(-10),  0.33453404f*(-10), 0.99944543f*(-10)
+//    };
+    glBindVertexArray(sticker_VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, sticker_VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(sticker_vertices), sticker_vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), (GLvoid*)0);
+    glEnableVertexAttribArray(0);
+    glBindVertexArray(0);
+
+
+    Shader stickerShader("shader/sticker.vert", "shader/sticker.frag");
+    stickerShader.Use();
+    GLint modelviewLoc = glGetUniformLocation(stickerShader.Program, "modelview");
+    GLint projectionLoc = glGetUniformLocation(stickerShader.Program, "projection");
 
     GLuint bgTexture;
     glGenTextures(1, &bgTexture);
@@ -91,6 +142,8 @@ int main()
         glfwPollEvents();
 
         video_in>>frame;
+        estimator.update(frame);
+
         glBindTexture(GL_TEXTURE_2D, bgTexture);
         assert(frame.rows == HEIGHT);
         assert(frame.cols == WIDTH);
@@ -103,11 +156,38 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // Draw our first triangle
+        // Draw video
         triangleShader.Use();
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
+
+        // Draw sticker
+
+        stickerShader.Use();
+        for(auto pose : estimator.poses()){
+            cout<<"POSE"<<endl;
+            glm::mat4 modelView(
+                -pose(0,0), -pose(1,0), -pose(2,0), pose(3,0),
+                -pose(0,1), -pose(1,1), -pose(2,1), pose(3,1),
+                -pose(0,2), -pose(1,2), -pose(2,2), pose(3,2),
+                -pose(0,3), -pose(1,3), -pose(2,3), pose(3,3)
+            );
+            glUniformMatrix4fv(modelviewLoc, 1, GL_FALSE, glm::value_ptr(modelView));
+
+            GLfloat far=1000.0f, near=1.0f;
+            glm::mat4 projection(
+                2*estimator.focalLength/WIDTH, 0,                               0, 0,
+                0,                             2*estimator.focalLength/HEIGHT,  0, 0,
+                0,                             0,                               -(far+near)/(far-near), -1,
+                0,                             0,                               2*far*near/(far-near), 0
+            );
+            glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(-projection));
+
+            glBindVertexArray(sticker_VAO);
+            glDrawArrays(GL_LINE_STRIP, 0, 5);
+            glBindVertexArray(0);
+        }
 
         // Swap the screen buffers
         glfwSwapBuffers(window);

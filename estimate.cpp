@@ -176,9 +176,10 @@ head_pose HeadPoseEstimation::pose(size_t face_idx) const
     std::vector<Point2f> my_reprojected_points;
     my_project_points(head_points, pose, my_reprojected_points);
 
-    for(int i=0;i<head_points.size();++i){
-        printf("%.2f,%.2f    %.2f,%.2f\n", reprojected_points[i].x, reprojected_points[i].y, my_reprojected_points[i].x, my_reprojected_points[i].y);
-    }
+//    for(int i=0;i<head_points.size();++i){
+//        printf("%.2f,%.2f    %.2f,%.2f\n", reprojected_points[i].x, reprojected_points[i].y, my_reprojected_points[i].x, my_reprojected_points[i].y);
+//    }
+
 
     for (auto point : reprojected_points) {
         circle(_debug, point, 2, Scalar(0, 255, 255), 2);

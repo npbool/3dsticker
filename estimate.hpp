@@ -23,6 +23,8 @@ const static cv::Point3f P3D_NOSE(21.0, 0., -48.0);
 const static cv::Point3f P3D_STOMMION(10.0, 0., -75.0);
 const static cv::Point3f P3D_MENTON(0., 0.,-133.0);
 
+//z, x, y
+
 
 static const int MAX_FEATURES_TO_TRACK=100;
 
