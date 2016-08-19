@@ -8,10 +8,29 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
 #include "setup_gl.h"
 #include "constant.h"
+#include <iostream>
+using namespace std;
 
+
+int viewport_width, viewport_height;
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
+{
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, GL_TRUE);
+    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS){
+        cv::Mat capture(viewport_height, viewport_width, CV_8UC4);
+        cout<<"Capture"<<endl;
+        glReadPixels(0, 0, viewport_width, viewport_height, GL_BGRA, GL_UNSIGNED_BYTE, capture.data);
+        cv::imwrite("capture.png", capture);
+        cout<<"Done"<<endl;
+    }
+}
 
 GLFWwindow *setup_gl()
 {
@@ -28,7 +47,7 @@ GLFWwindow *setup_gl()
     glfwMakeContextCurrent(window);
 
     // Set the required callback functions
-//    glfwSetKeyCallback(window, key_callback);
+    glfwSetKeyCallback(window, key_callback);
 
     // Set this to true so GLEW knows to use a modern approach to retrieving function pointers and extensions
     glewExperimental = GL_TRUE;
@@ -36,9 +55,8 @@ GLFWwindow *setup_gl()
     glewInit();
 
     // Define the viewport dimensions
-    int width, height;
-    glfwGetFramebufferSize(window, &width, &height);
-    glViewport(0, 0, width, height);
+    glfwGetFramebufferSize(window, &viewport_width, &viewport_height);
+    glViewport(0, 0, viewport_width, viewport_height);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
