@@ -65,8 +65,13 @@ public:
         // Retrieve the directory path of the filepath
         this->directory = path.substr(0, path.find_last_of('/'));
 
+        minx = 1000; miny = 1000; minz = 1000;
+        maxx = -1000; maxy=-1000; maxz = -1000;
         // Process ASSIMP's root node recursively
         this->processNode(scene->mRootNode, scene);
+        cout<<"x:"<<minx<<' '<<maxx<<endl;
+        cout<<"y:"<<miny<<' '<<maxy<<endl;
+        cout<<"z:"<<minz<<' '<<maxz<<endl;
     }
 
     // Processes a node in a recursive fashion. Processes each individual mesh located at the node and repeats this process on its children nodes (if any).
@@ -85,9 +90,9 @@ public:
         {
             this->processNode(node->mChildren[i], scene);
         }
-
     }
 
+    float minx,miny,minz,maxx, maxy,maxz;
     Mesh processMesh(aiMesh* mesh, const aiScene* scene)
     {
         cout<<"Mesh "<<mesh->mName.C_Str()<<":"<<endl;
@@ -108,6 +113,9 @@ public:
             vector.y = mesh->mVertices[i].y*10;
             vector.z = mesh->mVertices[i].z*10;
             vertex.Position = vector;
+            minx = min(minx, vector.x); maxx = max(maxx, vector.x);
+            miny = min(miny, vector.y); maxy = max(maxy, vector.y);
+            minz = min(minz, vector.z); maxz = max(maxz, vector.z);
             // Normals
             vector.x = mesh->mNormals[i].x;
             vector.y = mesh->mNormals[i].y;

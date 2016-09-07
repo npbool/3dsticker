@@ -26,6 +26,9 @@ const GLfloat BG_Z = 0.999999;
 // Function prototypes
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 
+void printPoint(const char* name, glm::vec4 p){
+    cout<<name<<": "<<p.x/p.w<<' '<<p.y/p.w<<' '<<p.z/p.w<<' '<<p.w/p.w<<endl;
+}
 // The MAIN function, from here we start the application and run the game loop
 int main(int argc, char* argv[])
 {
@@ -172,6 +175,16 @@ int main(int argc, char* argv[])
             glUniformMatrix4fv(modelviewLoc, 1, GL_FALSE, glm::value_ptr(modelView));
             glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(-projection)); //Avoid negative w
             glassModel.Draw(meshShader);
+
+            glm::vec4 frontPoint(0,0,10, 1);
+            glm::vec4 backPoint(0,0,-100, 1);
+            glm::vec4 rightPoint(0, 100, 0, 1);
+            glm::vec4 frontMapTo = -projection * modelView * frontPoint;
+            glm::vec4 backMapTo = -projection * modelView * backPoint;
+            glm::vec4 rightMapTo = -projection * modelView * rightPoint;
+            printPoint("front", frontMapTo);
+            printPoint("back", backMapTo);
+            printPoint("right", rightMapTo);
 
 //            stickerShader.Use();
 //            glUniformMatrix4fv(glGetUniformLocation(stickerShader.Program, "modelview"),
