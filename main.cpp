@@ -15,6 +15,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_access.hpp>
 
 #include "Model.h"
 #include "estimate.hpp"
@@ -27,8 +28,33 @@ const GLfloat BG_Z = 0.999999;
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 
 void printPoint(const char* name, glm::vec4 p){
-    cout<<name<<": "<<p.x/p.w<<' '<<p.y/p.w<<' '<<p.z/p.w<<' '<<p.w/p.w<<endl;
+    cout<<name<<": "<<p.x/p.w<<' '<<p.y/p.w<<' '<<p.z/p.w<<' '<<p.w<<endl;
 }
+
+glm::vec4 cvPointToGlm(cv::Point3f p){
+    return glm::vec4(p.x, p.y, p.z, 1);
+}
+
+glm::vec2 recover(glm::vec4 p, glm::mat4 modelView, float focalLength, float cX, float cY) {
+    auto t =  modelView * p;
+    return glm::vec2(t.x/t.z * focalLength + cX, t.y/t.z * focalLength + cY);
+}
+
+float checkProject(cv::Point3f ori, glm::mat4 modelView, glm::mat4 projection, dlib::point& truePoint, float WIDTH, float HEIGHT)
+{
+    glm::vec4 p = cvPointToGlm(ori);
+    auto t = projection * modelView * p;
+    glm::vec3 r = glm::vec3(t.x/t.w, t.y/t.w, t.z/t.w);
+    cout<<"projected: "<<r.x<<' '<<r.y<<"; True: ";
+    float tx = 2*truePoint.x()/WIDTH - 1, ty = -(2*truePoint.y()/HEIGHT - 1);
+    cout<<tx<<' '<<ty<<endl;
+    return abs(tx - r.x)+abs(ty-r.y);
+}
+
+cv::Point2f getNDCPoint(dlib::point& truePoint, float WIDTH, float HEIGHT) {
+    return cv::Point2f((2*truePoint.x()/WIDTH - 1), -(2*truePoint.y()/HEIGHT - 1));
+}
+
 // The MAIN function, from here we start the application and run the game loop
 int main(int argc, char* argv[])
 {
@@ -45,8 +71,7 @@ int main(int argc, char* argv[])
         cerr << "Couldn't open camera" << endl;
         return 1;
     }
-    auto estimator = HeadPoseEstimation(argv[1]);
-    estimator.focalLength = 500;
+    auto estimator = HeadPoseEstimation(1000, argv[1]);
     estimator.opticalCenterX = WIDTH/2;
     estimator.opticalCenterY = HEIGHT/2;
 
@@ -90,21 +115,6 @@ int main(int argc, char* argv[])
     GLuint sticker_VAO, sticker_VBO;
     glGenVertexArrays(1, &sticker_VAO);
     glGenBuffers(1, &sticker_VBO);
-
-    GLfloat sticker_vertices[] = {
-       P3D_LEFT_EAR.x, P3D_LEFT_EAR.y, P3D_LEFT_EAR.z,
-       P3D_LEFT_EYE.x, P3D_LEFT_EYE.y, P3D_LEFT_EYE.z,
-       P3D_NOSE.x,P3D_NOSE.y, P3D_NOSE.z,
-       P3D_RIGHT_EYE.x, P3D_RIGHT_EYE.y, P3D_RIGHT_EYE.z,
-       P3D_RIGHT_EAR.x, P3D_RIGHT_EAR.y, P3D_RIGHT_EAR.z
-    };
-
-    glBindVertexArray(sticker_VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, sticker_VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(sticker_vertices), sticker_vertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), (GLvoid*)0);
-    glEnableVertexAttribArray(0);
-    glBindVertexArray(0);
     Shader stickerShader("shader/sticker.vert", "shader/sticker.frag");
 
     GLuint bgTexture;
@@ -116,7 +126,6 @@ int main(int argc, char* argv[])
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-
     cout<<"Begin Loading"<<endl;
     Model glassModel((GLchar*)"object/nice.obj");
     cout<<"Load Done"<<endl;
@@ -127,6 +136,7 @@ int main(int argc, char* argv[])
 
     Mat frame;
     Mat frame_vflip;
+
     // Game loop
     while (!glfwWindowShouldClose(window))
     {
@@ -139,7 +149,7 @@ int main(int argc, char* argv[])
         glBindTexture(GL_TEXTURE_2D, bgTexture);
         assert(frame.rows == HEIGHT);
         assert(frame.cols == WIDTH);
-        cv::flip(frame, frame_vflip, -1);
+        cv::flip(frame, frame_vflip, 0);
 
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH, HEIGHT, 0, GL_BGR, GL_UNSIGNED_BYTE, frame_vflip.data);
 
@@ -154,9 +164,18 @@ int main(int argc, char* argv[])
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
 
-        for(auto pose : estimator.poses()){
+        auto poses = estimator.poses();
+        for(int i=0;i<poses.size();++i){
+            auto pose = poses[i];
+            auto shape = estimator.shapes[i];
             GLfloat far=1000.0f, near=1.0f;
-            glm::mat4 modelView(
+            glm::mat4 flipY(
+                1, 0, 0, 0,
+                0, -1, 0, 0,
+                0, 0, -1, 0,
+                0, 0, 0, 1
+            );
+            glm::mat4 modelView = glm::mat4(
                 pose(0,0), pose(1,0), pose(2,0), pose(3,0),
                 pose(0,1), pose(1,1), pose(2,1), pose(3,1),
                 pose(0,2), pose(1,2), pose(2,2), pose(3,2),
@@ -164,9 +183,9 @@ int main(int argc, char* argv[])
             );
             glm::mat4 projection(
                 2*estimator.focalLength/WIDTH, 0,                               0, 0,
-                0,                             2*estimator.focalLength/HEIGHT,  0, 0,
-                0,                             0,                               -(far+near)/(far-near), -1,
-                0,                             0,                               2*far*near/(far-near), 0
+                0,                             -2*estimator.focalLength/HEIGHT, 0, 0,
+                0,                             0,                               0, 1,
+                0,                             0,                               0, 0
             );
 
             meshShader.Use();
@@ -176,50 +195,60 @@ int main(int argc, char* argv[])
             glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(-projection)); //Avoid negative w
             glassModel.Draw(meshShader);
 
-            glm::vec4 frontPoint(0,0,10, 1);
-            glm::vec4 backPoint(0,0,-100, 1);
-            glm::vec4 rightPoint(0, 100, 0, 1);
-            glm::vec4 frontMapTo = -projection * modelView * frontPoint;
-            glm::vec4 backMapTo = -projection * modelView * backPoint;
-            glm::vec4 rightMapTo = -projection * modelView * rightPoint;
-            printPoint("front", frontMapTo);
-            printPoint("back", backMapTo);
-            printPoint("right", rightMapTo);
-
-//            stickerShader.Use();
-//            glUniformMatrix4fv(glGetUniformLocation(stickerShader.Program, "modelview"),
-//                               1, GL_FALSE, glm::value_ptr(modelView));
-//
-//            glUniformMatrix4fv(glGetUniformLocation(stickerShader.Program, "projection"),
-//                               1, GL_FALSE, glm::value_ptr(-projection));
-//            glBindVertexArray(sticker_VAO);
-//            glDrawArrays(GL_LINE_STRIP, 0, 5);
-//            glBindVertexArray(0);
-
             /*
-            GLfloat* value;
-            value = glm::value_ptr(modelView);
-            cout<<"ModelView:"<<endl;
-            cout<<'[';
-            for(int i=0;i<16;++i){
-                cout<<value[i]<<',';
-            }
-            cout<<']'<<endl;
+            printPoint("Right: ", modelView * cvPointToGlm(P3D_LEFT_EYE));
+            printPoint("NOSE: ", modelView * cvPointToGlm(P3D_NOSE));
+            printPoint("EAR: ", modelView * cvPointToGlm(P3D_RIGHT_EAR));
 
-            cout<<"Projection:"<<endl;
-            value = glm::value_ptr(projection);
-            cout<<'[';
-            for(int i=0;i<16;++i){
-                cout<<value[i]<<',';
-            }
-            cout<<']'<<endl;
+            auto rightEyeMap = recover(cvPointToGlm(P3D_RIGHT_EYE), modelView, estimator.focalLength, WIDTH/2, HEIGHT/2);
+            auto rightEyeTrue = shape.part(RIGHT_EYE);
+            cout<<"Left rec: "<<rightEyeMap.x<<" "<<rightEyeMap.y<<";True: "<<rightEyeTrue.x()<<" "<<rightEyeTrue.y()<<endl;
 
-            glm::vec4 point(P3D_LEFT_EYE.x,P3D_LEFT_EYE.y, P3D_LEFT_EYE.z, 1.0f);
-            glm::vec4 transformed = modelView*point;
-            glm::vec4 mapped = projection*transformed;
-            cout<<"transformed: "<<transformed.x<<' '<<transformed.y<<' '<<transformed.z<<' '<<transformed.w<<endl;
-            cout<<"mapped: "<<mapped.x<<' '<<mapped.y<<' '<<mapped.z<<' '<<mapped.w<<endl;
+            auto leftEyeMap = recover(cvPointToGlm(P3D_LEFT_EYE), modelView, estimator.focalLength, WIDTH/2, HEIGHT/2);
+            auto leftEyeTrue = shape.part(LEFT_EYE);
+            cout<<"Right rec: "<<leftEyeMap.x<<" "<<leftEyeMap.y<<";True: "<<leftEyeTrue.x()<<" "<<leftEyeTrue.y()<<endl;
+
+            auto noseMap = recover(cvPointToGlm(P3D_NOSE), modelView, estimator.focalLength, WIDTH/2, HEIGHT/2);
+            auto noseTrue = shape.part(NOSE);
+            cout<<"Nose rec: "<<noseMap.x<<" "<<noseMap.y<<";True: "<<noseTrue.x()<<" "<<noseTrue.y()<<endl;
             */
+            /*
+            float dif = 0;
+            cout<<"Right "; dif+=checkProject(P3D_RIGHT_EYE, modelView, -projection, shape.part(RIGHT_EYE), WIDTH, HEIGHT);
+            cout<<"Left "; dif+=checkProject(P3D_LEFT_EYE, modelView, -projection, shape.part(LEFT_EYE), WIDTH, HEIGHT);
+            cout<<"Nose "; dif+=checkProject(P3D_NOSE, modelView, -projection, shape.part(NOSE), WIDTH, HEIGHT);
+            cout<<"dif: "<<dif<<endl;
+
+            stickerShader.Use();
+            auto leftEyeNDC = getNDCPoint(shape.part(LEFT_EYE), WIDTH, HEIGHT);
+            auto rightEyeNDC = getNDCPoint(shape.part(RIGHT_EYE), WIDTH, HEIGHT);
+            auto noseNDC = getNDCPoint(shape.part(NOSE), WIDTH, HEIGHT);
+            cout<<"Detect coord:"<<endl;
+            cout<<shape.part(LEFT_EYE).x()<<' '<<shape.part(LEFT_EYE).y()<<endl;
+            cout<<shape.part(RIGHT_EYE).x()<<' '<<shape.part(RIGHT_EYE).y()<<endl;
+            cout<<shape.part(NOSE).x()<<' '<<shape.part(NOSE).y()<<endl;
+            cout<<"NDC coord:"<<endl;
+            cout<<leftEyeNDC.x<<' '<<leftEyeNDC.y<<endl;
+            cout<<rightEyeNDC.x<<' '<<rightEyeNDC.y<<endl;
+            cout<<noseNDC.x<<' '<<noseNDC.y<<endl;
+            const GLfloat SZ = 0.999f;
+            GLfloat stickerVertices[] = {
+                leftEyeNDC.x,  leftEyeNDC.y,  SZ,    1.0f, 0,    0,
+                rightEyeNDC.x, rightEyeNDC.y, SZ,    0,    1.0f, 0,
+                noseNDC.x,     noseNDC.y,     SZ,    0,    0,    1.0f
+            };
+
+            // Draw sticker
+            glBindVertexArray(sticker_VAO);
+            glBindBuffer(GL_ARRAY_BUFFER, sticker_VBO);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(stickerVertices), stickerVertices, GL_STATIC_DRAW);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(GLfloat), (GLvoid*)0);
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(GLfloat), (GLvoid*)(3*sizeof(GLfloat)));
+            glEnableVertexAttribArray(0);
+            glEnableVertexAttribArray(1);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+            glBindVertexArray(0);
+             */
         }
 
         // Swap the screen buffers

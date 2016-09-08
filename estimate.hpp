@@ -40,12 +40,12 @@ static const int MAX_FEATURES_TO_TRACK=100;
 // Interesting facial features with their landmark index
 enum FACIAL_FEATURE {
     NOSE=30,
-    RIGHT_EYE=36,
-    LEFT_EYE=45,
-    RIGHT_SIDE=0,
-    LEFT_SIDE=16,
-    EYEBROW_RIGHT=21,
-    EYEBROW_LEFT=22,
+    RIGHT_EYE=45,
+    LEFT_EYE=36,
+    RIGHT_SIDE=16,
+    LEFT_SIDE=0,
+    EYEBROW_RIGHT=22,
+    EYEBROW_LEFT=21,
     MOUTH_UP=51,
     MOUTH_DOWN=57,
     MOUTH_RIGHT=48,
@@ -63,7 +63,7 @@ class HeadPoseEstimation {
 
 public:
 
-    HeadPoseEstimation(const std::string& face_detection_model = "shape_predictor_68_face_landmarks.dat", float focalLength=455.);
+    HeadPoseEstimation(float focalLength, const std::string& face_detection_model = "shape_predictor_68_face_landmarks.dat");
 
     void update(cv::InputArray image);
 
@@ -76,8 +76,6 @@ public:
     float opticalCenterY;
 
     mutable cv::Mat _debug;
-
-private:
 
     dlib::cv_image<dlib::bgr_pixel> current_image;
 

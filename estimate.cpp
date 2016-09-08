@@ -31,7 +31,7 @@ inline Point2f toCv(const dlib::point &p)
     return Point2f(p.x(), p.y());
 }
 
-HeadPoseEstimation::HeadPoseEstimation(const string &face_detection_model, float focalLength)
+HeadPoseEstimation::HeadPoseEstimation(float focalLength, const string &face_detection_model)
     :
     focalLength(focalLength),
     opticalCenterX(-1),
@@ -142,7 +142,6 @@ head_pose HeadPoseEstimation::pose(size_t face_idx) const
     detected_points.push_back(coordsOf(face_idx, LEFT_SIDE));
     detected_points.push_back(coordsOf(face_idx, MENTON));
     detected_points.push_back(coordsOf(face_idx, NOSE));
-
     auto stomion = (coordsOf(face_idx, MOUTH_CENTER_TOP) + coordsOf(face_idx, MOUTH_CENTER_BOTTOM)) * 0.5;
     detected_points.push_back(stomion);
 
