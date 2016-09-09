@@ -1,12 +1,8 @@
 #version 330 core
 layout (location = 0) in vec3 position;
-layout (location = 1) in vec3 normal;
-layout (location = 2) in vec2 texCoords;
 
 out vec2 TexCoords;
 
-//uniform mat4 model;
-//uniform mat4 view;
 uniform mat4 modelview;
 uniform mat4 projection;
 uniform float maxZ;
@@ -17,9 +13,11 @@ void main()
     vec4 final = projection * mapped;
     final.z = mapped.z/maxZ;
     if(final.w<0){
-        gl_Position = -final;
-    } else {
-        gl_Position = final;
+        final = -final;
     }
-    TexCoords = texCoords;
+    gl_Position = final;
+
+    float texX = (final.x/final.w + 1)/2;
+    float texY = (final.y/final.w + 1)/2;
+    TexCoords = vec2(texX, texY);
 }

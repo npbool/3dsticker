@@ -126,13 +126,19 @@ int main(int argc, char* argv[])
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    cout<<"Begin Loading"<<endl;
+    cout<<"Glass"<<endl;
     Model glassModel((GLchar*)"object/nice.obj");
-    cout<<"Load Done"<<endl;
     cout<<glassModel.meshes.size()<<" meshes"<<endl;
     Shader meshShader("shader/mesh.vert", "shader/mesh.frag");
     GLint modelviewLoc = glGetUniformLocation(meshShader.Program, "modelview");
     GLint projectionLoc = glGetUniformLocation(meshShader.Program, "projection");
+
+    cout<<"Head"<<endl;
+    Model headModel((GLchar*)"object/head.obj");
+    cout<<headModel.meshes.size()<<" meshes"<<endl;
+    Shader headShader("shader/head.vert", "shader/head.frag");
+    GLint headModelviewLoc = glGetUniformLocation(headShader.Program, "modelview");
+    GLint headProjectionLoc = glGetUniformLocation(headShader.Program, "projection");
 
     Mat frame;
     Mat frame_vflip;
@@ -191,10 +197,16 @@ int main(int argc, char* argv[])
             meshShader.Use();
             glUniform3f(glGetUniformLocation(meshShader.Program, "light.color"), 0.8f, 0.8f, 1.0f);
             glUniform3f(glGetUniformLocation(meshShader.Program, "light.position"), 1.0f, 1.0f, 1.0f);
+            glUniform1f(glGetUniformLocation(meshShader.Program, "maxZ"), 1000.0f);
             glUniformMatrix4fv(modelviewLoc, 1, GL_FALSE, glm::value_ptr(modelView));
-            glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(-projection)); //Avoid negative w
+            glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection)); //Avoid negative w
             glassModel.Draw(meshShader);
 
+            headShader.Use();
+            glUniform1f(glGetUniformLocation(headShader.Program, "maxZ"), 1000.0f);
+            glUniformMatrix4fv(headModelviewLoc, 1, GL_FALSE, glm::value_ptr(modelView));
+            glUniformMatrix4fv(headProjectionLoc, 1, GL_FALSE, glm::value_ptr(projection)); //Avoid negative w
+            headModel.Draw(meshShader);
             /*
             printPoint("Right: ", modelView * cvPointToGlm(P3D_LEFT_EYE));
             printPoint("NOSE: ", modelView * cvPointToGlm(P3D_NOSE));
