@@ -109,9 +109,9 @@ public:
             Vertex vertex;
             glm::vec3 vector; // We declare a placeholder vector since assimp uses its own vector class that doesn't directly convert to glm's vec3 class so we transfer the data to this placeholder glm::vec3 first.
             // Positions
-            vector.x = mesh->mVertices[i].x * 1.5;
-            vector.y = mesh->mVertices[i].y * 1.5;
-            vector.z = mesh->mVertices[i].z * 1.5;
+            vector.x = mesh->mVertices[i].x * 10;
+            vector.y = mesh->mVertices[i].y * 10;
+            vector.z = mesh->mVertices[i].z * 10;
             vertex.Position = vector;
             minx = min(minx, vector.x); maxx = max(maxx, vector.x);
             miny = min(miny, vector.y); maxy = max(maxy, vector.y);

@@ -13,9 +13,10 @@ void main()
     vec4 final = projection * mapped;
     final.z = mapped.z/maxZ * final.w;
     if(final.w<0){
-        final = -final;
+        gl_Position = -final;
+    } else {
+        gl_Position = final;
     }
-    gl_Position = final;
 
     float texX = (final.x/final.w + 1)/2;
     float texY = (final.y/final.w + 1)/2;

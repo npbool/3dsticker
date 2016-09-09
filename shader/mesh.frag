@@ -27,9 +27,8 @@ uniform Material material;
 void main()
 {
 //    color = vec4(texture(texture_diffuse1, TexCoords));
-//    vec3 ambient = light.color * material.ambient * texture(texture_ambient1, TexCoords).rgb;
-    vec3 ambient = texture(texture_ambient1, TexCoords).rgb;
-    vec3 self_color = ambient;
-//    color = vec4(self_color, material.opacity);
-    color = vec4(self_color, 1.0);
+    vec3 ambient = light.color * material.ambient;
+    color = vec4(ambient, material.opacity);
+//    vec3 ambient = texture(texture_ambient1, TexCoords).rgb;
+//    color = vec4(ambient, 1.0);
 }

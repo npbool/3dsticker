@@ -130,7 +130,7 @@ int main(int argc, char* argv[])
     glBindTexture(GL_TEXTURE_2D, 0);
 
     cout<<"Glass"<<endl;
-    Model glassModel((GLchar*)"object/paperbag.obj");
+    Model glassModel((GLchar*)"object/nice.obj");
     cout<<glassModel.meshes.size()<<" meshes"<<endl;
     Shader meshShader("shader/mesh.vert", "shader/mesh.frag");
     GLint modelviewLoc = glGetUniformLocation(meshShader.Program, "modelview");
@@ -196,6 +196,15 @@ int main(int argc, char* argv[])
                 0,                             0,                               0, 0
             );
 
+
+            headShader.Use();
+            glUniform1d(glGetUniformLocation(headShader.Program, "bgTexture"), 0);
+            glUniform1f(glGetUniformLocation(headShader.Program, "maxZ"), 2000.0f);
+            glUniformMatrix4fv(headModelviewLoc, 1, GL_FALSE, glm::value_ptr(modelView));
+            glUniformMatrix4fv(headProjectionLoc, 1, GL_FALSE, glm::value_ptr(projection)); //Avoid negative w
+            headModel.Draw(headShader);
+
+
             meshShader.Use();
             glUniform3f(glGetUniformLocation(meshShader.Program, "light.color"), 1.0f, 1.0f, 1.0f);
             glUniform3f(glGetUniformLocation(meshShader.Program, "light.position"), 1.0f, 1.0f, 1.0f);
@@ -203,14 +212,7 @@ int main(int argc, char* argv[])
             glUniformMatrix4fv(modelviewLoc, 1, GL_FALSE, glm::value_ptr(modelView));
             glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection)); //Avoid negative w
             glassModel.Draw(meshShader);
-            /*
-            headShader.Use();
-            glUniform1d(glGetUniformLocation(headShader.Program, "bgTexture"), 0);
-            glUniform1f(glGetUniformLocation(headShader.Program, "maxZ"), 2000.0f);
-            glUniformMatrix4fv(headModelviewLoc, 1, GL_FALSE, glm::value_ptr(modelView));
-            glUniformMatrix4fv(headProjectionLoc, 1, GL_FALSE, glm::value_ptr(projection)); //Avoid negative w
-            headModel.Draw(meshShader);
-             */
+
             /*
             printPoint("Right: ", modelView * cvPointToGlm(P3D_LEFT_EYE));
             printPoint("NOSE: ", modelView * cvPointToGlm(P3D_NOSE));

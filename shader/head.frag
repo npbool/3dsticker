@@ -7,6 +7,6 @@ uniform sampler2D bgTexture;
 
 void main()
 {
-    color = texture(bgTexture, TexCoords);
-//    color = vec4(1.0, 1.0, 0.0, 1.0);
+    color = vec4(texture(bgTexture, TexCoords).rgb, 1.0);
+//    color = vec4(1.0, 0.0, 0.0, 1.0);
 }
