@@ -86,8 +86,10 @@ int main(int argc, char* argv[])
         -1.0f,  1.0f, BG_Z,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // Top Left
     };
     GLuint indices[] = {  // Note that we start from 0!
-        0, 1, 3, // First Triangle
-        1, 2, 3  // Second Triangle
+        //0, 1, 3, // First Triangle
+        //1, 2, 3  // Second Triangle
+        3, 1, 0, // First Triangle
+        3, 2, 1  // Second Triangle
     };
     GLuint VBO, VAO, EBO;
     glGenVertexArrays(1, &VAO);
@@ -118,6 +120,7 @@ int main(int argc, char* argv[])
     Shader stickerShader("shader/sticker.vert", "shader/sticker.frag");
 
     GLuint bgTexture;
+    glActiveTexture(GL_TEXTURE0);
     glGenTextures(1, &bgTexture);
     glBindTexture(GL_TEXTURE_2D, bgTexture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -127,7 +130,7 @@ int main(int argc, char* argv[])
     glBindTexture(GL_TEXTURE_2D, 0);
 
     cout<<"Glass"<<endl;
-    Model glassModel((GLchar*)"object/nice.obj");
+    Model glassModel((GLchar*)"object/paperbag.obj");
     cout<<glassModel.meshes.size()<<" meshes"<<endl;
     Shader meshShader("shader/mesh.vert", "shader/mesh.frag");
     GLint modelviewLoc = glGetUniformLocation(meshShader.Program, "modelview");
@@ -149,23 +152,22 @@ int main(int argc, char* argv[])
         // Check if any events have been activiated (key pressed, mouse moved etc.) and call corresponding response functions
         glfwPollEvents();
 
+        // Clear the colorbuffer
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
         video_in>>frame;
         estimator.update(frame);
-
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, bgTexture);
         assert(frame.rows == HEIGHT);
         assert(frame.cols == WIDTH);
         cv::flip(frame, frame_vflip, 0);
 
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH, HEIGHT, 0, GL_BGR, GL_UNSIGNED_BYTE, frame_vflip.data);
-
-        // Render
-        // Clear the colorbuffer
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-
         // Draw video
         triangleShader.Use();
+        glUniform1d(glGetUniformLocation(triangleShader.Program, "ourTexture"), 0);
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
@@ -195,18 +197,20 @@ int main(int argc, char* argv[])
             );
 
             meshShader.Use();
-            glUniform3f(glGetUniformLocation(meshShader.Program, "light.color"), 0.8f, 0.8f, 1.0f);
+            glUniform3f(glGetUniformLocation(meshShader.Program, "light.color"), 1.0f, 1.0f, 1.0f);
             glUniform3f(glGetUniformLocation(meshShader.Program, "light.position"), 1.0f, 1.0f, 1.0f);
-            glUniform1f(glGetUniformLocation(meshShader.Program, "maxZ"), 1000.0f);
+            glUniform1f(glGetUniformLocation(meshShader.Program, "maxZ"), 2000.0f);
             glUniformMatrix4fv(modelviewLoc, 1, GL_FALSE, glm::value_ptr(modelView));
             glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection)); //Avoid negative w
             glassModel.Draw(meshShader);
-
+            /*
             headShader.Use();
-            glUniform1f(glGetUniformLocation(headShader.Program, "maxZ"), 1000.0f);
+            glUniform1d(glGetUniformLocation(headShader.Program, "bgTexture"), 0);
+            glUniform1f(glGetUniformLocation(headShader.Program, "maxZ"), 2000.0f);
             glUniformMatrix4fv(headModelviewLoc, 1, GL_FALSE, glm::value_ptr(modelView));
             glUniformMatrix4fv(headProjectionLoc, 1, GL_FALSE, glm::value_ptr(projection)); //Avoid negative w
             headModel.Draw(meshShader);
+             */
             /*
             printPoint("Right: ", modelView * cvPointToGlm(P3D_LEFT_EYE));
             printPoint("NOSE: ", modelView * cvPointToGlm(P3D_NOSE));

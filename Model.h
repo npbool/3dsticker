@@ -109,9 +109,9 @@ public:
             Vertex vertex;
             glm::vec3 vector; // We declare a placeholder vector since assimp uses its own vector class that doesn't directly convert to glm's vec3 class so we transfer the data to this placeholder glm::vec3 first.
             // Positions
-            vector.x = mesh->mVertices[i].x*10;
-            vector.y = mesh->mVertices[i].y*10;
-            vector.z = mesh->mVertices[i].z*10;
+            vector.x = mesh->mVertices[i].x * 1.5;
+            vector.y = mesh->mVertices[i].y * 1.5;
+            vector.z = mesh->mVertices[i].z * 1.5;
             vertex.Position = vector;
             minx = min(minx, vector.x); maxx = max(maxx, vector.x);
             miny = min(miny, vector.y); maxy = max(maxy, vector.y);
@@ -176,8 +176,10 @@ public:
             textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
             // 2. Specular maps
             vector<Texture> specularMaps = this->loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
-
             textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+            // 3. Ambient maps
+            vector<Texture> ambientMaps = this->loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_ambient");
+            textures.insert(textures.end(), ambientMaps.begin(), ambientMaps.end());
         }
         cout<<"textures: "<<textures.size()<<endl;
 
@@ -209,6 +211,7 @@ public:
 
 GLint TextureFromFile(const char* path, string directory)
 {
+    printf("Load Texture: %s\n", path);
     //Generate texture ID and load texture data
     string filename = string(path);
     filename = directory + '/' + filename;

@@ -15,7 +15,7 @@ void main()
 {
     vec4 mapped = modelview * vec4(position, 1.0f);
     vec4 final = projection * mapped;
-    final.z = mapped.z/maxZ;
+    final.z = mapped.z/maxZ * final.w;
     if(final.w<0){
         gl_Position = -final;
     } else {
